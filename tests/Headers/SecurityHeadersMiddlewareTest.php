@@ -101,4 +101,33 @@ final class SecurityHeadersMiddlewareTest extends TestCase
 
         new SecurityHeadersConfig(referrerPolicy: 'never');
     }
+
+    /**
+     * Ported from pivotphp-core tests/Middleware/Security/SecurityHeadersMiddlewareTest.php
+     * (testSecurityHeadersMiddlewareWithHsts) and tests/Core/SecurityHeadersMiddlewareTest.php.
+     * The core also asserted the deprecated X-XSS-Protection header (SPEC-075); it is not sent.
+     */
+    public function testHstsCanBeTunedOrDisabled(): void
+    {
+        $tuned = (new SecurityHeadersMiddleware(new SecurityHeadersConfig(
+            hstsMaxAge: 63072000,
+            hstsPreload: true,
+        )))->headers();
+        $disabled = (new SecurityHeadersMiddleware(new SecurityHeadersConfig(hsts: false)))->headers();
+
+        self::assertSame('max-age=63072000; includeSubDomains; preload', $tuned['Strict-Transport-Security']);
+        self::assertArrayNotHasKey('Strict-Transport-Security', $disabled);
+        self::assertArrayNotHasKey('X-XSS-Protection', $disabled);
+    }
+
+    /**
+     * Core: testSecurityHeadersMiddlewareBasicFunctionality — status and body are untouched.
+     */
+    public function testResponseStatusAndBodyAreUntouched(): void
+    {
+        $response = (new SecurityHeadersMiddleware())->process(new ServerRequest('GET', '/'), new RecordingHandler());
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame('handler', (string) $response->getBody());
+    }
 }

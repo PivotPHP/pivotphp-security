@@ -22,7 +22,7 @@ demand:
 | `Proxy\TrustedProxyMiddleware` | — | — |
 | `Headers\SecurityHeadersMiddleware` | [bepsvpt/secure-headers](https://github.com/bepsvpt/secure-headers) | `composer require bepsvpt/secure-headers` |
 | `Csrf\CsrfMiddleware` | [yiisoft/csrf](https://github.com/yiisoft/csrf) | `composer require yiisoft/csrf` |
-| `Jwt\JwtAuthMiddleware` | [firebase/php-jwt](https://github.com/firebase/php-jwt) | `composer require firebase/php-jwt` |
+| `Jwt\JwtAuthMiddleware`, `Jwt\JwtIssuer` | [firebase/php-jwt](https://github.com/firebase/php-jwt) | `composer require firebase/php-jwt` |
 | `RateLimit\RateLimitMiddleware` | [symfony/rate-limiter](https://symfony.com/doc/current/rate_limiter.html) | `composer require symfony/rate-limiter` |
 
 ## Installation
@@ -213,6 +213,25 @@ rejected); `iss`/`aud` are verified here. Failures return `401` with `WWW-Authen
 > ⚠️ **Security:** empty secrets, secrets shorter than the hash output (32/48/64 bytes) and unknown
 > algorithms are rejected at configuration. Load keys from the environment or a secret store, never
 > from source code.
+
+### Issuing tokens
+
+`JwtIssuer` shares the `JwtConfig` used by the middleware, so issued tokens always match what is
+verified (algorithm, `iss`, `aud`):
+
+```php
+use PivotPHP\Security\Jwt\JwtIssuer;
+
+$issuer = new JwtIssuer($config);                     // HS*: signs with the configured secret
+// $issuer = new JwtIssuer($config, $privateKeyPem);  // RS*/PS256/ES*/EdDSA: private key required
+
+$token = $issuer->issue(['sub' => $userId, 'role' => 'admin'], ttl: 3600);
+```
+
+`iat`, `nbf` and `exp` come from the clock and `iss`/`aud` from the configuration; passing them in the
+claims throws `InvalidConfigurationException`. Generate HMAC secrets with `bin2hex(random_bytes(32))`.
+Refresh tokens are an application concern (issue a second token with a longer `ttl` and a `typ` claim,
+and check it in your refresh endpoint).
 
 ## Rate limiting
 

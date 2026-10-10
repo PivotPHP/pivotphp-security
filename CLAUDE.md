@@ -15,7 +15,7 @@ mínima em `conflict`.
 | `Proxy` | própria (só existe acoplado ao HttpFoundation) |
 | `Headers` | adapter de `bepsvpt/secure-headers` |
 | `Csrf` | adapter de `yiisoft/csrf` |
-| `Jwt` | adapter de `firebase/php-jwt` |
+| `Jwt` | adapter de `firebase/php-jwt` (verificação e emissão: `JwtAuthMiddleware`, `JwtIssuer`) |
 | `RateLimit` | adapter de `symfony/rate-limiter` (`RateLimiterFactory`; a interface só existe a partir da 7.3) |
 
 ## Comandos

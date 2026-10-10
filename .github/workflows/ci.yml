@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    name: PHP ${{ matrix.php }} · ${{ matrix.deps }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.1'
+            deps: 'lowest'
+          - php: '8.3'
+            deps: 'highest'
+          - php: '8.4'
+            deps: 'highest'
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php }}
+        extensions: mbstring, openssl, json
+        coverage: none
+
+    - name: Validate composer.json
+      run: composer validate --strict
+
+    - name: Install dependencies
+      run: |
+        if [ "${{ matrix.deps }}" = "lowest" ]; then
+          composer update --prefer-lowest --prefer-stable --no-progress --no-interaction
+        else
+          composer update --prefer-stable --no-progress --no-interaction
+        fi
+
+    - name: Audit dependencies
+      run: composer audit
+
+    - name: Run PHPUnit
+      run: vendor/bin/phpunit
+
+    - name: Run PHPStan (Level 9)
+      if: matrix.deps == 'highest'
+      run: vendor/bin/phpstan analyse --no-progress
+
+    - name: Run PHPCS (PSR-12)
+      run: vendor/bin/phpcs --standard=PSR12 src tests
